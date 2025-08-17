@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// HashMap hash_map_create(size_t capacity, HashFn hash_fn)
-
 HashMap hash_map_create_options(HashMapCreateOptions options)
 {
 	HashMap map = {0};
