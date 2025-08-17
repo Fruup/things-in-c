@@ -6,5 +6,20 @@
     "**/.DS_Store": true,
     "**/Thumbs.db": true
   },
-  "hide-files.files": []
+  "hide-files.files": [],
+  "files.associations": {
+    "*.rmd": "markdown",
+    "*.svelte": "svelte",
+    "*.svx": "markdown",
+    ".env.development": "properties",
+    "*.html": "html",
+    "stddef.h": "c",
+    "stdbool.h": "c",
+    "memory.h": "c",
+    "malloc.h": "c",
+    "string.h": "c",
+    "_string.h": "c",
+    "ctype.h": "c",
+    "hash_fn.h": "c"
+  }
 }
