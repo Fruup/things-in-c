@@ -1,4 +1,12 @@
+import { watch } from "chokidar";
 import * as prompts from "@clack/prompts";
+import { parseArgs } from "util";
+
+const args = parseArgs({
+  options: {
+    watch: { type: "boolean", default: false, multiple: false, short: "w" },
+  },
+});
 
 // Get a list of all project directories
 const options: string[] = [];
@@ -29,8 +37,35 @@ if (prompts.isCancel(selectedProject)) process.exit(1);
 
 prompts.outro(`🏃 Running project: ${selectedProject}`);
 
-Bun.spawn(["./nob", selectedProject], {
-  stdin: "inherit",
-  stdout: "inherit",
-  stderr: "inherit",
-});
+// -------------------------------------------------------------------------------------
+
+let nobProcess: Bun.Subprocess | undefined;
+
+const restartNobProcess = () => {
+  nobProcess?.kill();
+
+  nobProcess = Bun.spawn(["./nob", selectedProject], {
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+};
+
+restartNobProcess();
+
+if (args.values.watch) {
+  const dir = `./${selectedProject}/`;
+  prompts.log.info(`Watching for changes inside "${dir}"...`);
+
+  const watcher = watch(dir);
+
+  watcher.on("change", () => {
+    restartNobProcess();
+  });
+  watcher.on("add", () => {
+    restartNobProcess();
+  });
+  watcher.on("addDir", () => {
+    restartNobProcess();
+  });
+}
