@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef size_t (*HashFn)(const void *key, size_t key_size);
+typedef uint64_t (*HashFn)(const void *key, size_t key_size);
 
-size_t default_hash_fn(const void *key, size_t key_size);
+uint64_t dumb_hash_fn(const void *key, size_t key_size);
+uint64_t hash_fn_fnv64(const void *key, size_t key_size);
 
 #endif

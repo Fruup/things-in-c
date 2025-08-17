@@ -5,12 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-HashMap hash_map_create(size_t capacity, HashFn hash_fn)
+// HashMap hash_map_create(size_t capacity, HashFn hash_fn)
+
+HashMap hash_map_create_options(HashMapCreateOptions options)
 {
 	HashMap map = {0};
 
-	map.capacity = capacity;
-	map.hash_fn = hash_fn;
+	map.capacity = options.capacity;
+	map.hash_fn = options.hash_fn;
 
 	map.population = calloc(map.capacity, sizeof(map.population[0]));
 	map.keys = calloc(map.capacity, sizeof(map.keys[0]));
@@ -46,9 +48,10 @@ void hash_map_resize_if_needed(HashMap *map)
 	if (map->size < map->capacity / 4)
 		return;
 
-	HashMap new_map = hash_map_create(map->capacity <= 0 ? 32 : map->capacity * 2, map->hash_fn);
-
-	// TODO: rehash keys & values
+	HashMap new_map = hash_map_create_options((HashMapCreateOptions){
+			.capacity = map->capacity <= 0 ? 32 : map->capacity * 2,
+			.hash_fn = map->hash_fn,
+	});
 
 	for (size_t i = 0; i < map->capacity; i++)
 	{

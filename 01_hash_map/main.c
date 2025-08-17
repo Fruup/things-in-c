@@ -16,7 +16,7 @@ size_t value_4 = 400;
 
 void test_0()
 {
-	HashMap map = hash_map_create(32, default_hash_fn);
+	HashMap map = hash_map_create();
 	hash_map_print(&map);
 
 	uint32_t key = 42;
@@ -42,7 +42,7 @@ void test_0()
 
 void test_resizing()
 {
-	HashMap map = hash_map_create(4, default_hash_fn);
+	HashMap map = hash_map_create(.capacity = 4, .hash_fn = dumb_hash_fn);
 	assert(map.size == 0);
 	assert(map.capacity == 4);
 
@@ -99,7 +99,7 @@ void test_resizing()
 
 void test_linear_probing()
 {
-	HashMap map = hash_map_create(32, default_hash_fn);
+	HashMap map = hash_map_create(.capacity = 32, .hash_fn = dumb_hash_fn);
 	assert(map.size == 0);
 
 	uint32_t key_1_prime = key_1 + map.capacity;
@@ -128,8 +128,29 @@ void test_linear_probing()
 	hash_map_destroy(&map);
 }
 
+void test_hash_fns()
+{
+	HashMap map1 = hash_map_create(.capacity = 32, .hash_fn = dumb_hash_fn);
+	HashMap map2 = hash_map_create(.capacity = 32, .hash_fn = hash_fn_fnv64);
+
+	for (size_t key = 0; key < 100; key++)
+	{
+		hash_map_add(&map1, &key, sizeof(key), &key, sizeof(key));
+		hash_map_add(&map2, &key, sizeof(key), &key, sizeof(key));
+	}
+
+	hash_map_print(&map1);
+	hash_map_print(&map2);
+
+	hash_map_destroy(&map2);
+	hash_map_destroy(&map1);
+}
+
 int main()
 {
 	test_resizing();
 	test_linear_probing();
+	test_hash_fns();
+
+	printf("✅ All tests passed!\n");
 }

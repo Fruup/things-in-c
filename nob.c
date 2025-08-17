@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 		File_Paths children = {0};
 		nob_read_entire_dir(input_project, &children);
 
-		cmd_append(&cmd, "clang", "-o", out_file);
+		cmd_append(&cmd, "clang", "-Wno-initializer-overrides", "-o", out_file);
 
 		// Compile each child .c file
 		for (size_t i = 0; i < children.count; i++)

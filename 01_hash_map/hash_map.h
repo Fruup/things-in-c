@@ -23,7 +23,20 @@ typedef struct
 	HashFn hash_fn;
 } HashMap;
 
-HashMap hash_map_create(size_t capacity, HashFn hash_fn);
+typedef struct
+{
+	size_t capacity;
+	HashFn hash_fn;
+} HashMapCreateOptions;
+
+HashMap hash_map_create_options(HashMapCreateOptions options);
+
+#define hash_map_create(...)                      \
+	hash_map_create_options((HashMapCreateOptions){ \
+			.capacity = 32,                             \
+			.hash_fn = hash_fn_fnv64,                   \
+			__VA_ARGS__})
+
 void hash_map_destroy(HashMap *map);
 void hash_map_resize_if_needed(HashMap *map);
 void hash_map_print(HashMap *map);
