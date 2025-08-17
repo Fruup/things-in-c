@@ -1,0 +1,58 @@
+#define NOB_IMPLEMENTATION
+#define NOB_STRIP_PREFIX
+#include "nob.h"
+
+int main(int argc, char **argv)
+{
+	NOB_GO_REBUILD_URSELF(argc, argv);
+
+	if (argc < 2)
+	{
+		nob_log(ERROR, "No input project specified");
+		return 1;
+	}
+
+	const char *input_project = argv[1];
+	if (!file_exists(input_project))
+	{
+		nob_log(ERROR, "Input project '%s' does not exist", input_project);
+		return 1;
+	}
+
+	mkdir_if_not_exists("build");
+
+	Cmd cmd = {0};
+	char *out_file;
+
+	{
+		String_Builder sb = {0};
+		sb_append_cstr(&sb, "./build/");
+		sb_append_cstr(&sb, input_project);
+		String_View sv = sb_to_sv(sb);
+		out_file = (char *)temp_sv_to_cstr(sv);
+		sb.count = 0;
+
+		sb_append_cstr(&sb, input_project);
+		sb_append_cstr(&sb, "/main.c");
+		sv = sb_to_sv(sb);
+		const char *entrypoint = temp_sv_to_cstr(sv);
+
+		if (!file_exists(entrypoint))
+		{
+			nob_log(ERROR, "Entry point '%s' does not exist", entrypoint);
+			return 1;
+		}
+
+		cmd_append(&cmd, "clang", "-o", out_file, entrypoint);
+		if (!cmd_run(&cmd))
+			return 1;
+	}
+
+	{
+		cmd_append(&cmd, out_file);
+		if (!cmd_run(&cmd))
+			return 1;
+	}
+
+	return 0;
+}
