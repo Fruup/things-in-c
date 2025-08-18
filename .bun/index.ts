@@ -5,8 +5,17 @@ import { parseArgs } from "util";
 const args = parseArgs({
   options: {
     watch: { type: "boolean", default: false, multiple: false, short: "w" },
+    help: { type: "boolean", default: false, multiple: false, short: "h" },
+    project: { type: "string", multiple: false, short: "p" },
   },
 });
+
+if (args.values.help) {
+  prompts.log.info("Help information");
+  process.exit(0);
+}
+
+prompts.intro("things-in-c | Project Runner");
 
 // Get a list of all project directories
 const options: string[] = [];
@@ -25,47 +34,68 @@ let config: any = {};
 const configFile = Bun.file("./.bun/.cfg.json");
 if (await configFile.exists()) config = await configFile.json();
 
-const selectedProject = await prompts.select({
-  message: "Select a project to run",
-  options: options.map((item) => ({ value: item, label: item })),
-  initialValue: config.selectedProject,
-});
+if (args.values.project) {
+  config.selectedProject = args.values.project;
+}
 
-await configFile.write(JSON.stringify({ selectedProject }));
+const selectedProject = await (async () => {
+  if (args.values.project && options.includes(args.values.project)) {
+    return args.values.project;
+  }
+
+  return await prompts.select({
+    message: "Select a project to run",
+    options: options.map((item) => ({ value: item, label: item })),
+    initialValue: config.selectedProject,
+  });
+})();
 
 if (prompts.isCancel(selectedProject)) process.exit(1);
+
+// Store config back
+config.selectedProject = selectedProject;
+await configFile.write(JSON.stringify(config));
 
 prompts.outro(`🏃 Running project: ${selectedProject}`);
 
 // -------------------------------------------------------------------------------------
 
+const dir = `./${selectedProject}/`;
+
 let nobProcess: Bun.Subprocess | undefined;
 
 const restartNobProcess = () => {
-  nobProcess?.kill();
+  console.clear();
+  prompts.intro(`🏃 Running project: ${selectedProject}`);
+
+  nobProcess?.kill(9);
 
   nobProcess = Bun.spawn(["./nob", selectedProject], {
     stdin: "inherit",
     stdout: "inherit",
     stderr: "inherit",
   });
+
+  if (args.values.watch) {
+    nobProcess.exited.then(() => {
+      prompts.outro(`Waiting for changes inside "${dir}"...`);
+    });
+  }
 };
 
-restartNobProcess();
-
 if (args.values.watch) {
-  const dir = `./${selectedProject}/`;
-  prompts.log.info(`Watching for changes inside "${dir}"...`);
-
   const watcher = watch(dir);
 
-  watcher.on("change", () => {
-    restartNobProcess();
+  watcher.on("all", (event) => {
+    if (
+      event === "change" ||
+      event === "add" ||
+      event === "addDir" ||
+      event === "unlink"
+    ) {
+      restartNobProcess();
+    }
   });
-  watcher.on("add", () => {
-    restartNobProcess();
-  });
-  watcher.on("addDir", () => {
-    restartNobProcess();
-  });
+} else {
+  restartNobProcess();
 }
