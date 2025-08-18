@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
+#include <stdlib.h>
 
 uint32_t key_1 = 1;
 uint32_t key_2 = 2;
@@ -146,11 +148,63 @@ void test_hash_fns()
 	hash_map_destroy(&map1);
 }
 
+void test_random()
+{
+	const size_t N = 1e4;
+	const bool do_dumb = true;
+	const bool do_fnv = true;
+
+	// dumb
+	if (do_dumb)
+	{
+		HashMap dumb_map = hash_map_create(.capacity = 32, .hash_fn = dumb_hash_fn);
+		assert(dumb_map.size == 0);
+
+		clock_t start = clock();
+
+		for (size_t i = 0; i < N; i++)
+		{
+			uint32_t key = rand();
+			uint32_t value = rand();
+			hash_map_add(&dumb_map, &key, sizeof(key), &value, sizeof(value));
+		}
+
+		clock_t end = clock();
+		printf("time taken [dumb] = %.3fms\n", 1000.0 * (double)(end - start) / (double)CLOCKS_PER_SEC);
+
+		hash_map_destroy(&dumb_map);
+	}
+
+	// fnv
+	if (do_fnv)
+	{
+		HashMap fnv_map = hash_map_create(.capacity = 32, .hash_fn = hash_fn_fnv64);
+		assert(fnv_map.size == 0);
+
+		clock_t start = clock();
+
+		for (size_t i = 0; i < N; i++)
+		{
+			uint32_t key = rand();
+			uint32_t value = rand();
+			hash_map_add(&fnv_map, &key, sizeof(key), &value, sizeof(value));
+		}
+
+		clock_t end = clock();
+		printf("time taken [fnv] = %.3fms\n", 1000.0 * (double)(end - start) / (double)CLOCKS_PER_SEC);
+
+		hash_map_destroy(&fnv_map);
+	}
+}
+
 int main()
 {
-	test_resizing();
-	test_linear_probing();
-	test_hash_fns();
+	srand(time(NULL));
+
+	// test_resizing();
+	// test_linear_probing();
+	// test_hash_fns();
+	test_random();
 
 	printf("✅ All tests passed!\n");
 }

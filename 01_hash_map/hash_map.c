@@ -23,11 +23,6 @@ HashMap hash_map_create_options(HashMapCreateOptions options)
 
 void hash_map_destroy(HashMap *map)
 {
-	free(map->keys);
-	free(map->key_sizes);
-	free(map->values);
-	free(map->value_sizes);
-	free(map->population);
 
 	for (size_t i = 0; i < map->capacity; i++)
 	{
@@ -37,6 +32,12 @@ void hash_map_destroy(HashMap *map)
 		free(map->keys[i]);
 		free(map->values[i]);
 	}
+
+	free(map->keys);
+	free(map->key_sizes);
+	free(map->values);
+	free(map->value_sizes);
+	free(map->population);
 
 	map->capacity = 0;
 }
