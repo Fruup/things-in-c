@@ -3,6 +3,7 @@ import * as prompts from "@clack/prompts";
 import { parseArgs } from "util";
 
 const args = parseArgs({
+  allowPositionals: true,
   options: {
     watch: { type: "boolean", default: false, multiple: false, short: "w" },
     help: { type: "boolean", default: false, multiple: false, short: "h" },
@@ -15,6 +16,8 @@ if (args.values.help) {
   process.exit(0);
 }
 
+const [project] = args.positionals;
+
 prompts.intro("things-in-c | Project Runner");
 
 // Get a list of all project directories
@@ -23,6 +26,8 @@ const options: string[] = [];
 for await (let item of new Bun.Glob("./*/").scan({ onlyFiles: false })) {
   item = item.replace(/^\.\//, "");
   if (!/^\d/g.test(item)) continue;
+
+  if (project && !item.includes(project)) continue;
 
   options.push(item);
 }
@@ -38,17 +43,20 @@ if (args.values.project) {
   config.selectedProject = args.values.project;
 }
 
-const selectedProject = await (async () => {
-  if (args.values.project && options.includes(args.values.project)) {
-    return args.values.project;
-  }
+const selectedProject =
+  options.length === 1
+    ? options[0]
+    : await (async () => {
+        if (args.values.project && options.includes(args.values.project)) {
+          return args.values.project;
+        }
 
-  return await prompts.select({
-    message: "Select a project to run",
-    options: options.map((item) => ({ value: item, label: item })),
-    initialValue: config.selectedProject,
-  });
-})();
+        return await prompts.select({
+          message: "Select a project to run",
+          options: options.map((item) => ({ value: item, label: item })),
+          initialValue: config.selectedProject,
+        });
+      })();
 
 if (prompts.isCancel(selectedProject)) process.exit(1);
 
