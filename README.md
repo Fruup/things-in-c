@@ -25,6 +25,7 @@ bun build --compile --minify --outfile bin/run .bun/index.ts
 
 ```sh
 ./nob 00_hello_world # or other root folder
+./nob 01_depends_on_02 02_hello_world # add multiple projects when needed
 ```
 
 ---
@@ -38,3 +39,5 @@ Using the runner:
 # run and watch for changes inside the selected project
 ./bin/run -w
 ```
+
+The runner tries to automatically detect dependencies of the selected project.
