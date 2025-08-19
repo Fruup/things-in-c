@@ -1,4 +1,4 @@
-import { watch } from "chokidar";
+import { FSWatcher, watch } from "chokidar";
 import * as prompts from "@clack/prompts";
 import { parseArgs } from "util";
 
@@ -22,7 +22,7 @@ const options: string[] = [];
 
 for await (let item of new Bun.Glob("./*/").scan({ onlyFiles: false })) {
   item = item.replace(/^\.\//, "");
-  if (!/^\d+_/g.test(item)) continue;
+  if (!/^\d/g.test(item)) continue;
 
   options.push(item);
 }
@@ -64,13 +64,23 @@ const dir = `./${selectedProject}/`;
 
 let nobProcess: Bun.Subprocess | undefined;
 
-const restartNobProcess = () => {
-  console.clear();
-  prompts.intro(`🏃 Running project: ${selectedProject}`);
-
+const restartNobProcess = async ({ watcher }: { watcher?: FSWatcher } = {}) => {
   nobProcess?.kill(9);
+  console.clear();
 
-  nobProcess = Bun.spawn(["./nob", selectedProject], {
+  const dependencies = await detectDependencies(selectedProject);
+
+  if (dependencies.length > 0) {
+    prompts.log.info(`Detected dependencies: ${dependencies.join(", ")}`);
+
+    watcher?.add(dependencies.map((dep) => `./${dep}`));
+  }
+
+  const cmd = ["./nob", selectedProject, ...dependencies];
+
+  prompts.note(cmd.join(" "), `🏃 Running project: ${selectedProject}`);
+
+  nobProcess = Bun.spawn(cmd, {
     stdin: "inherit",
     stdout: "inherit",
     stderr: "inherit",
@@ -93,9 +103,36 @@ if (args.values.watch) {
       event === "addDir" ||
       event === "unlink"
     ) {
-      restartNobProcess();
+      restartNobProcess({ watcher });
     }
   });
 } else {
   restartNobProcess();
+}
+
+/**
+ * Automatically detect project dependencies by analyzing #include statements.
+ */
+async function detectDependencies(project: string) {
+  const otherOptions = options.filter((option) => option !== project);
+
+  const dependencies = new Set<string>();
+
+  for await (const filename of new Bun.Glob(`./${project}/**/*.{c,h}`).scan({
+    onlyFiles: true,
+    absolute: true,
+  })) {
+    const text = await Bun.file(filename).text();
+
+    const includeRegex = new RegExp(
+      `^\\s*#include.+\\W(${otherOptions.join("|")})\\W`,
+      "gim"
+    );
+
+    for (const [_, dependency] of text.matchAll(includeRegex)) {
+      if (dependency) dependencies.add(dependency);
+    }
+  }
+
+  return Array.from(dependencies);
 }

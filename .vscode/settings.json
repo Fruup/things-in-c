@@ -29,6 +29,8 @@
     "locale": "c",
     "optional": "c",
     "ratio": "c",
-    "vector": "c"
+    "vector": "c",
+    "hash_grid.h": "c",
+    "hash_map.h": "c"
   }
 }

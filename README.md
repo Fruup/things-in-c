@@ -17,6 +17,7 @@ To build the runner:
 - Install [bun](https://bun.com/)
 
 ```sh
+bun install --cwd .bun
 bun build --compile --minify --outfile bin/run .bun/index.ts
 ```
 
