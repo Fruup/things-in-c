@@ -73,7 +73,8 @@ const restartNobProcess = async ({ watcher }: { watcher?: FSWatcher } = {}) => {
   if (dependencies.length > 0) {
     prompts.log.info(`Detected dependencies: ${dependencies.join(", ")}`);
 
-    watcher?.add(dependencies.map((dep) => `./${dep}`));
+    // Also watch for changes in the dependencies
+    watcher?.add(dependencies.map((dep) => `./${dep}/`));
   }
 
   const cmd = ["./nob", selectedProject, ...dependencies];
@@ -94,17 +95,23 @@ const restartNobProcess = async ({ watcher }: { watcher?: FSWatcher } = {}) => {
 };
 
 if (args.values.watch) {
-  const watcher = watch(dir);
+  const watcher = watch(dir, {
+    ignoreInitial: true,
+  });
 
-  watcher.on("all", (event) => {
-    if (
-      event === "change" ||
-      event === "add" ||
-      event === "addDir" ||
-      event === "unlink"
-    ) {
-      restartNobProcess({ watcher });
-    }
+  watcher.on("ready", () => {
+    watcher.on("all", (event, path) => {
+      if (
+        event === "change" ||
+        event === "add" ||
+        event === "addDir" ||
+        event === "unlink"
+      ) {
+        restartNobProcess({ watcher });
+      }
+    });
+
+    restartNobProcess({ watcher });
   });
 } else {
   restartNobProcess();
